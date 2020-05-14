@@ -6,7 +6,6 @@ import sbtcrossproject.CrossPlugin.autoImport.crossProject
 import org.scalameta.build._
 import org.scalameta.build.Versions._
 import complete.DefaultParsers._
-import scalapb.compiler.Version.scalapbVersion
 import munit.sbtmunit.BuildInfo.munitVersion
 
 lazy val LanguageVersions = Seq(LatestScala213, LatestScala212, LatestScala211)
@@ -354,7 +353,7 @@ lazy val tests = crossProject(JSPlatform, JVMPlatform)
   )
   .jsSettings(
     commonJsSettings,
-    scalaJSModuleKind := ModuleKind.CommonJSModule
+    scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.CommonJSModule) }
   )
   .enablePlugins(BuildInfoPlugin)
   .dependsOn(scalameta)
@@ -552,7 +551,16 @@ lazy val protobufSettings = Def.settings(
     ) -> sourceManaged.in(Compile).value
   ),
   PB.protoSources.in(Compile) := Seq(file("semanticdb/semanticdb")),
-  libraryDependencies += "com.thesamet.scalapb" %%% "scalapb-runtime" % scalapbVersion
+  PB.additionalDependencies := Nil,
+  libraryDependencies += {
+    val scalapbVersion =
+      if (scalaBinaryVersion.value == "2.11") {
+        "0.9.7"
+      } else {
+        "0.10.3"
+      }
+    "com.thesamet.scalapb" %%% "scalapb-runtime" % scalapbVersion
+  }
 )
 
 lazy val adhocRepoUri = sys.props("scalameta.repository.uri")
